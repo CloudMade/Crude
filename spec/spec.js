@@ -206,6 +206,16 @@ describe("Crude", function() {
 				expect(result.method).toEqual('get');
 				expect(result.data).toBe(data);
 			});
+
+			it('api-wide memberAction on nested resources through api.nestedResources should work correctly', function() {
+				api.nestedResources.memberAction('bar');
+
+				var result = api.comments.inPost(1).bar(2, data);
+
+				expect(result.url).toEqual('http://example.com/posts/1/comments/2/bar.js');
+				expect(result.method).toEqual('get');
+				expect(result.data).toBe(data);
+			});
 		});
 	});
 });
