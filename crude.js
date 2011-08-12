@@ -23,17 +23,6 @@
 	};
 
 
-	// classical inheritance for internal use
-	Crude.inherit = function (Child, Parent) {
-		function F() {}
-		F.prototype = Parent.prototype;
-
-		var proto = new F();
-		proto.constructor = Child;
-		Child.prototype = proto;
-	};
-
-
 	Crude.api = function (baseUrl, format, requestFn) {
 		return new Crude.Api(baseUrl, format, requestFn);
 	};
@@ -45,23 +34,35 @@
 		this._baseUrl = baseUrl;
 		this._format = format;
 		this._requestFn = requestFn;
+
+		// create a Resources-inherited class to allow extending nested resources api-wide
+		this.NestedResources = function () {
+			Crude.Resources.apply(this, arguments);
+		};
+		Crude.inherit(this.NestedResources, Crude.Resources);
+
+		this.nestedResources = this.NestedResources.prototype;
 	};
 
 	Crude.Api.prototype = {
 		request: function (path, method, data) {
+			// (path, data) signature
 			if (!data && typeof method != 'string') {
 				data = method;
 				method = 'get';
 			}
+
 			data = data || {};
 
 			var url = this._baseUrl + '/' + path + '.' + this._format;
 
-			url = Crude.template(url, data);
+			// evaluate {stuff} in the url
+			url = Crude.template(url, data, true);
 
 			return this._requestFn(url, method, data);
 		},
 
+		// example: api.resources('post') creates Crude.Resources instance as api.posts
 		resources: function (name, pluralName) {
 			pluralName = pluralName || Crude.pluralize(name);
 			var resources = this[pluralName] = new Crude.Resources(this, name, pluralName);
@@ -88,10 +89,12 @@
 		},
 
 		get: function (id, data) {
+			// get(data) signature
 			if (!data && typeof id == 'object') {
 				data = id;
 				id = null;
 			}
+
 			return this.request(id || '', 'get', data);
 		},
 
@@ -113,16 +116,23 @@
 			return this.request(id, 'delete', data);
 		},
 
+		// e.g. after api.comments.belongTo(api.posts),
+		// api.comments.inPost(id) returns NestedResources instance
 		belongTo: function (parent) {
 			var methodName = 'in' + Crude.capitalize(parent._name);
-			this[methodName] = function (id) {
-				function NestedResources() {
-					Crude.NestedResources.apply(this, arguments);
-				}
-				Crude.inherit(NestedResources, Crude.NestedResources);
 
-				var protoAccessorName = parent._name + Crude.capitalize(this._pluralName);
-				this._api[protoAccessorName] = NestedResources.prototype;
+			this[methodName] = function (id) {
+				// created a separate inherited class to allow extending this resource pair
+				var ApiNestedResources = this._api.NestedResources;
+
+				function NestedResources() {
+					ApiNestedResources.apply(this, arguments);
+				}
+				Crude.inherit(NestedResources, ApiNestedResources);
+
+				// e.g. allow prototype access through api.postComments
+				var protoAccessName = parent._name + Crude.capitalize(this._pluralName);
+				this._api[protoAccessName] = NestedResources.prototype;
 
 				var prefix = parent._pluralName + '/' + id;
 				return new NestedResources(this._api, this._name, this._pluralName, prefix);
@@ -130,12 +140,14 @@
 			return this;
 		},
 
+		// for custom actions on members, e.g. /posts/1/voteup
 		memberAction: function (name, options) {
 			// options: path, method, argsToDataFn
 			// TODO member action
 			return this;
 		},
 
+		// for custom actions on collections, e.g. /posts/delete_all
 		collectionAction: function (name, options) {
 			// TODO collection action
 			return this;
@@ -143,14 +155,17 @@
 	};
 
 
-	// create a Resources-inherited class to allow extending nested resources globally
-	Crude.NestedResources = function () {
-		Crude.Resources.apply(this, arguments);
-	};
-	Crude.inherit(Crude.NestedResources, Crude.Resources);
-
-
 	// various utility functions
+
+	// classical inheritance for internal use
+	Crude.inherit = function (Child, Parent) {
+		function F() {}
+		F.prototype = Parent.prototype;
+
+		var proto = new F();
+		proto.constructor = Child;
+		Child.prototype = proto;
+	};
 
 	// feel free to add more rules from outside
 	Crude.pluralRules = [[/$/, 's'],
@@ -212,13 +227,15 @@
 	};
 
 	// Crude.template("Hello {foo}", {foo: "World"}) -> "Hello world"
-	Crude.template = function(str, data) {
+	Crude.template = function(str, data, cleanupData) {
 		return str.replace(/\{ *([^} ]+) *\}/g, function (a, key) {
 			if (!(key in data)) {
 				throw new Error('No value provided for variable: ' + key);
 			}
 			var value = data[key];
-			delete data[key];
+			if (cleanupData) {
+				delete data[key];
+			}
 			return value;
 		});
 	};
