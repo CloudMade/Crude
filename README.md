@@ -10,7 +10,7 @@ Initially a part of a closed-source client code for an upcoming CloudMade servic
 
 ```javascript
 var myApi = Crude.api('', 'js', function(url, method, data) {
-	// do requests with jQuery as example
+	// do requests with jQuery as an example
 	return $.ajax({url: url, type: method, data: data});
 });
 
@@ -33,7 +33,7 @@ myApi.comments.inPost(123).create({author: 'Vladimir', message: 'Hi!'});
 // POST /posts/123/comments.json, comment[author]=Vladimir&comment[message]=Hi!
 
 myApi.comments.inPost(123).add(345).error(handleError);
-// PUT /posts/123/comments/345/add.json, call showError if not successful
+// PUT /posts/123/comments/345/add.json, call handleError if not successful
 
 myApi.request('some/{foo}/url', 'get', {foo: 'custom', baz: 5});
 // GET /some/custom/url.json?baz=5
