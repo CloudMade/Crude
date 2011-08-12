@@ -1,6 +1,6 @@
 /**
  * @preserve Copyright (c) 2011, Vladimir Agafonkin, CloudMade
- * Crude is a clever JavaScript library for working with RESTful services.
+ * Crude (v0.1) is a clever JavaScript library for working with RESTful services.
  * See https://github.com/CloudMade/Crude for more information.
  */
 
@@ -9,7 +9,7 @@
 (function (global) {
 	"use strict";
 
-	var Crude = {},
+	var Crude = {version: '0.1'},
 	    oldCrude = global.Crude;
 
 	if (typeof module !== 'undefined' && module.exports) {
