@@ -4,13 +4,15 @@
  * See https://github.com/CloudMade/Crude for more information.
  */
 
-(function (global, undefined) {
+/*jslint regexp: true, browser: true, node: true, unparam: true */
+
+(function (global) {
 	"use strict";
 
 	var Crude = {},
 	    oldCrude = global.Crude;
 
-	if (typeof module != 'undefined' && module.exports) {
+	if (typeof module !== 'undefined' && module.exports) {
 		module.exports = Crude;
 	} else {
 		global.Crude = Crude;
@@ -31,9 +33,9 @@
 	// the root class of the API (handles basic configuration)
 
 	Crude.Api = function (baseUrl, format, requestFn) {
-		this._baseUrl = baseUrl;
-		this._format = format;
-		this._requestFn = requestFn;
+		this.baseUrl = baseUrl;
+		this.format = format;
+		this.requestFn = requestFn;
 
 		// create a Resources-inherited class to allow extending nested resources api-wide
 		this.NestedResources = function () {
@@ -47,19 +49,19 @@
 	Crude.Api.prototype = {
 		request: function (path, method, data) {
 			// (path, data) signature
-			if (!data && typeof method != 'string') {
+			if (!data && typeof method !== 'string') {
 				data = method;
 				method = 'get';
 			}
 
 			data = data || {};
 
-			var url = this._baseUrl + '/' + path + '.' + this._format;
+			var url = this.baseUrl + '/' + path + '.' + this.format;
 
 			// evaluate {stuff} in the url
 			url = Crude.template(url, data, true);
 
-			return this._requestFn(url, method, data);
+			return this.requestFn(url, method, data);
 		},
 
 		// example: api.resources('post') creates Crude.Resources instance as api.posts
@@ -74,23 +76,23 @@
 	// the class where most of the magic happens (all the REST stuff)
 
 	Crude.Resources = function (api, name, pluralName, prefix) {
-		this._api = api;
-		this._name = name;
-		this._pluralName = pluralName;
-		this._prefix = prefix;
+		this.api = api;
+		this.name = name;
+		this.pluralName = pluralName;
+		this.prefix = prefix;
 	};
 
 	Crude.Resources.prototype = {
 		request: function (path, method, data) {
-			var prefix = (this._prefix ? this._prefix + '/' : ''),
+			var prefix = (this.prefix ? this.prefix + '/' : ''),
 			    postfix = (path ? '/' + path : '');
 
-			return this._api.request(prefix + this._pluralName + postfix, method, data);
+			return this.api.request(prefix + this.pluralName + postfix, method, data);
 		},
 
 		get: function (id, data) {
 			// get(data) signature
-			if (!data && typeof id == 'object') {
+			if (!data && typeof id === 'object') {
 				data = id;
 				id = null;
 			}
@@ -99,14 +101,14 @@
 		},
 
 		create: function (props, data) {
-			props = Crude.wrapKeys(props, this._name);
+			props = Crude.wrapKeys(props, this.name);
 			data = Crude.extend({}, data, props);
 
 			return this.request('', 'post', data);
 		},
 
 		update: function (id, props, data) {
-			props = Crude.wrapKeys(props, this._name);
+			props = Crude.wrapKeys(props, this.name);
 			data = Crude.extend({}, data, props);
 
 			return this.request(id, 'put', data);
@@ -119,11 +121,13 @@
 		// e.g. after api.comments.belongTo(api.posts),
 		// api.comments.inPost(id) returns NestedResources instance
 		belongTo: function (parent) {
-			var methodName = 'in' + Crude.capitalize(parent._name);
+			var methodName = 'in' + Crude.capitalize(parent.name);
 
 			this[methodName] = function (id) {
 				// created a separate inherited class to allow extending this resource pair
-				var ApiNestedResources = this._api.NestedResources;
+				var ApiNestedResources = this.api.NestedResources,
+					protoAccessName = parent.name + Crude.capitalize(this.pluralName),
+					prefix = parent.pluralName + '/' + id;
 
 				function NestedResources() {
 					ApiNestedResources.apply(this, arguments);
@@ -131,11 +135,9 @@
 				Crude.inherit(NestedResources, ApiNestedResources);
 
 				// e.g. allow prototype access through api.postComments
-				var protoAccessName = parent._name + Crude.capitalize(this._pluralName);
-				this._api[protoAccessName] = NestedResources.prototype;
+				this.api[protoAccessName] = NestedResources.prototype;
 
-				var prefix = parent._pluralName + '/' + id;
-				return new NestedResources(this._api, this._name, this._pluralName, prefix);
+				return new NestedResources(this.api, this.name, this.pluralName, prefix);
 			};
 			return this;
 		},
@@ -180,10 +182,11 @@
 		    i = rules.length,
 		    rule;
 
-		while (i--) {
+		while (i) {
+			i -= 1; // conforming to strict JSLint for fun :)
 			rule = rules[i];
-			if (typeof rule[0] == 'string') {
-				if (name == rule[0]) {
+			if (typeof rule[0] === 'string') {
+				if (name === rule[0]) {
 					return rule[1];
 				}
 			} else {
@@ -202,9 +205,11 @@
 	Crude.extend = function (dest) {
 		var sources = Array.prototype.slice.call(arguments, 1),
 		    len = sources.length,
-		    src, i, j;
+		    src,
+		    i,
+		    j;
 
-		for (j = 0; j < len; j++) {
+		for (j = 0; j < len; j += 1) {
 			src = sources[j] || {};
 			for (i in src) {
 				if (src.hasOwnProperty(i)) {
@@ -227,12 +232,12 @@
 	};
 
 	// Crude.template("Hello {foo}", {foo: "World"}) -> "Hello world"
-	Crude.template = function(str, data, cleanupData) {
-		return str.replace(/\{ *([^} ]+) *\}/g, function (a, key) {
-			if (!(key in data)) {
+	Crude.template = function (str, data, cleanupData) {
+		return str.replace(/\{ *([^} ]+) *\}/g, function (str, key) {
+			var value = data[key];
+			if (!data.hasOwnProperty(key)) {
 				throw new Error('No value provided for variable: ' + key);
 			}
-			var value = data[key];
 			if (cleanupData) {
 				delete data[key];
 			}
