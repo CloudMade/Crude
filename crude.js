@@ -1,6 +1,6 @@
 /**
  * @preserve Copyright (c) 2011, Vladimir Agafonkin, CloudMade
- * Crude is a JavaScript library that simplifies working with RESTful services.
+ * Crude is a clever JavaScript library for working with RESTful services.
  * See https://github.com/CloudMade/Crude for more information.
  */
 
@@ -9,24 +9,32 @@
 	var Crude = {},
 		oldCrude = global.Crude;
 	
-	
 	if (typeof module != 'undefined' && module.exports) {
 		module.exports = Crude;
 	} else {
 		global['Crude'] = Crude;
 	}
 	
-	
-	Crude.api = function(baseUrl, format, requestFn) {
-		return new Crude._Api(baseUrl, format, requestFn);
-	};
-	
-	
 	Crude.noConflict = function() {
 		global['Crude'] = oldCrude;
 		return this;
 	};
 	
+	
+	Crude.inherit = function(Child, Parent) {
+		function F() {}
+		F.prototype = Parent.prototype;
+		
+		var proto = new F();
+		proto.constructor = Child;
+		Child.prototype = proto;
+	};
+	
+	
+	Crude.api = function(baseUrl, format, requestFn) {
+		return new Crude._Api(baseUrl, format, requestFn);
+	};
+		
 	
 	Crude._Api = function(baseUrl, format, requestFn) {
 		this._baseUrl = baseUrl;
@@ -57,7 +65,7 @@
 		},
 		
 		resources: function(name, pluralName) {
-			pluralName = pluralName || Crude._pluralize(name);
+			pluralName = pluralName || Crude.pluralize(name);
 			var resources = this[pluralName] = new Crude._Resources(this, name, pluralName);
 			return resources;
 		}
@@ -88,15 +96,15 @@
 		},
 		
 		create: function(props, data) {
-			var props = Crude._wrapKeys(props, this._name),
-				data = Crude._extend({}, data, props);
+			var props = Crude.wrapKeys(props, this._name),
+				data = Crude.extend({}, data, props);
 			
 			return this.request('', 'post', data);
 		},
 		
 		update: function(id, props, data) {
-			var props = Crude._wrapKeys(props, this._name),
-				data = Crude._extend({}, data, props);
+			var props = Crude.wrapKeys(props, this._name),
+				data = Crude.extend({}, data, props);
 			
 			return this.request(id, 'put', data);
 		},
@@ -106,14 +114,14 @@
 		},
 		
 		belongTo: function(parent) {
-			var methodName = 'in' + Crude._capitalize(parent._name);
+			var methodName = 'in' + Crude.capitalize(parent._name);
 			this[methodName] = function(id) {
 				function NestedResources() {
-					Crude._Resources.apply(this, arguments);
+					Crude._NestedResources.apply(this, arguments);
 				}
-				Crude._inherit(NestedResources, Crude._Resources);
+				Crude.inherit(NestedResources, Crude._NestedResources);
 				
-				var protoAccessorName = parent._name + Crude._capitalize(this._pluralName);
+				var protoAccessorName = parent._name + Crude.capitalize(this._pluralName);
 				this._api[protoAccessorName] = NestedResources.prototype;
 				
 				var prefix = parent._pluralName + '/' + id;
@@ -135,6 +143,13 @@
 	};
 	
 	
+	// create a Resources-inherited class to allow extending nested resources globally
+	Crude._NestedResources = function() {
+		Crude._Resources.apply(this, arguments);
+	};
+	Crude.inherit(Crude._NestedResources, Crude._Resources);
+	
+	
 	Crude.pluralRules = [[/$/, 's'],
 	                     [/s$/i, 's'],
 	                     [/(?:([^f])fe|([lr])f)$/i, '$1$2ves'],
@@ -142,7 +157,7 @@
 	                     [/(x|ch|s|sh)$/i, '$1es'],
 	                     ['child', 'children']];
 	
-	Crude._pluralize = function(name) {
+	Crude.pluralize = function(name) {
 		var rules = Crude.pluralRules,
 			i = rules.length, rule;
 		
@@ -161,11 +176,11 @@
 		return name;
 	};
 	
-	Crude._capitalize = function(str) {
+	Crude.capitalize = function(str) {
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	};
 	
-	Crude._extend = function(dest) {
+	Crude.extend = function(dest) {
 		var sources = Array.prototype.slice.call(arguments, 1);
 		for (var j = 0, len = sources.length, src; j < len; j++) {
 			src = sources[j] || {};
@@ -178,7 +193,7 @@
 		return dest;
 	};
 	
-	Crude._wrapKeys = function(props, name) {
+	Crude.wrapKeys = function(props, name) {
 		var obj = {};
 		for (var i in props) {
 			if (props.hasOwnProperty(i)) {
@@ -186,15 +201,6 @@
 			}
 		}
 		return obj;
-	};
-	
-	Crude._inherit = function(Child, Parent) {
-		function F() {}
-		F.prototype = Parent.prototype;
-		
-		var proto = new F();
-		proto.constructor = Child;
-		Child.prototype = proto;
 	};
 	
 }(this));

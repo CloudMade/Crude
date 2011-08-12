@@ -1,4 +1,8 @@
-Crude is a simple JavaScript library for creating human-readable APIs to RESTful services, inspired by the Rails Routing API.
+## Crude
+
+Crude is a clever JavaScript library from [CloudMade](http://cloudmade.com) that allows you to create human-readable APIs to RESTful services, inspired by the Rails routing engine.
+
+Initially a part of a closed-source client code for an upcoming CloudMade service, it's now released under an open source BSD-type license. It's designed to work both as a browser library and a CommonJS module for server-side platforms like Node.js. It also has a complete Jasmine-powered test coverage.
 
 ## Basic usage example
 
