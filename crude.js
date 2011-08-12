@@ -4,7 +4,7 @@
  * See https://github.com/CloudMade/Crude for more information.
  */
 
-/*jslint regexp: true, browser: true, node: true, unparam: true */
+/*jslint regexp: true, browser: true, node: true */
 
 (function (global) {
 	"use strict";
@@ -73,7 +73,7 @@
 	};
 
 
-	// the class where most of the magic happens (all the REST stuff)
+	// the class where most of the magic happens (all the RESTful stuff)
 
 	Crude.Resources = function (api, name, pluralName, prefix) {
 		this.api = api;
@@ -121,37 +121,59 @@
 		// e.g. after api.comments.belongTo(api.posts),
 		// api.comments.inPost(id) returns NestedResources instance
 		belongTo: function (parent) {
-			var methodName = 'in' + Crude.capitalize(parent.name);
+			var methodName = 'in' + Crude.capitalize(parent.name),
+				ApiNestedResources = this.api.NestedResources,
+				protoAccessName = parent.name + Crude.capitalize(this.pluralName);
+
+			// created a separate inherited class to allow extending this resource pair
+			function NestedResources() {
+				ApiNestedResources.apply(this, arguments);
+			}
+			Crude.inherit(NestedResources, ApiNestedResources);
+
+			// e.g. allow prototype access through api.postComments
+			this.api[protoAccessName] = NestedResources.prototype;
 
 			this[methodName] = function (id) {
-				// created a separate inherited class to allow extending this resource pair
-				var ApiNestedResources = this.api.NestedResources,
-					protoAccessName = parent.name + Crude.capitalize(this.pluralName),
-					prefix = parent.pluralName + '/' + id;
-
-				function NestedResources() {
-					ApiNestedResources.apply(this, arguments);
-				}
-				Crude.inherit(NestedResources, ApiNestedResources);
-
-				// e.g. allow prototype access through api.postComments
-				this.api[protoAccessName] = NestedResources.prototype;
-
+				var prefix = parent.pluralName + '/' + id;
 				return new NestedResources(this.api, this.name, this.pluralName, prefix);
 			};
 			return this;
 		},
 
-		// for custom actions on members, e.g. /posts/1/voteup
-		memberAction: function (name, options) {
-			// options: path, method, argsToDataFn
-			// TODO member action
+		// for custom actions on collections, e.g. /posts/delete_all
+		collectionAction: function (name, options) {
+			options = Crude.extend({
+				method: 'get',
+				path: name
+			}, options);
+
+			this[name] = function (data) {
+				if (options.argsToData) {
+					data = options.argsToData.apply(null, arguments);
+				}
+				return this.request(options.path, options.method, data);
+			};
+
 			return this;
 		},
 
-		// for custom actions on collections, e.g. /posts/delete_all
-		collectionAction: function (name, options) {
-			// TODO collection action
+		// for custom actions on members, e.g. /posts/1/voteup
+		// TODO remove repetition with collectionAction
+		memberAction: function (name, options) {
+			options = Crude.extend({
+				method: 'get',
+				path: name
+			}, options);
+
+			this[name] = function (id, data) {
+				if (options.argsToData) {
+					var args = Array.prototype.slice.call(arguments, 1);
+					data = options.argsToData.apply(null, args);
+				}
+				return this.request(id + '/' + options.path, options.method, data);
+			};
+
 			return this;
 		}
 	};
@@ -236,7 +258,7 @@
 		return str.replace(/\{ *([^} ]+) *\}/g, function (str, key) {
 			var value = data[key];
 			if (!data.hasOwnProperty(key)) {
-				throw new Error('No value provided for variable: ' + key);
+				throw new Error('No value provided for variable ' + str);
 			}
 			if (cleanupData) {
 				delete data[key];
