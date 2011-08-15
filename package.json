@@ -1,0 +1,12 @@
+{
+	"name": "Crude",
+	"description": "A clever JavaScript library for working with RESTful services, inspired by the Rails routing engine.",
+	"version": "0.1",
+	"keywords": ["rest", "crud", "api", "service", "client", "dsl", "routing"],
+	"author": "Vladimir Agafonkin (https://github.com/mourner)",
+	"contributors": [],
+	"dependencies": [],
+	"licenses": [{"type": "BSD", "url": "https://raw.github.com/CloudMade/Crude/master/LICENSE"}],
+	"repository": {"type": "git", "url": "git://github.com/CloudMade/Crude.git"},
+	"main": "crude.js"
+}
