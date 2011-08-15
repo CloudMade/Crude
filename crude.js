@@ -28,7 +28,7 @@
 	Crude.api = function (baseUrl, format, requestFn) {
 		return new Crude.Api(baseUrl, format, requestFn);
 	};
-
+	
 
 	// the root class of the API (handles basic configuration)
 
@@ -54,7 +54,7 @@
 				method = 'get';
 			}
 
-			data = data || {};
+			data = Crude.extend({}, data, this.baseData);
 
 			var url = this.baseUrl + '/' + path + '.' + this.format;
 
@@ -62,6 +62,11 @@
 			url = Crude.template(url, data, true);
 
 			return this.requestFn(url, method, data);
+		},
+		
+		// set api-wide request data
+		data: function (data) {
+			this.baseData = data;
 		},
 
 		// example: api.resources('post') creates Crude.Resources instance as api.posts

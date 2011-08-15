@@ -10,20 +10,20 @@ describe("Crude", function() {
 
 	describe('request', function() {
 		it('should use the config passed in the Crude.api function correctly', function() {
-			var data = {},
+			var data = {foo: 'bar'},
 				result = api.request('test', 'put', data);
 
 			expect(result.url).toEqual('http://example.com/test.js');
 			expect(result.method).toEqual('put');
-			expect(result.data).toBe(data);
+			expect(result.data).toEqual(data);
 		});
 
 		it('should work with two arguments, using "get" as the default method', function() {
-			var data = {},
+			var data = {foo: 'bar'},
 				result = api.request('test', data);
 
 			expect(result.method).toEqual('get');
-			expect(result.data).toBe(data);
+			expect(result.data).toEqual(data);
 		});
 
 		it('should evaluate each {prop} in the url with corresponding property from the data, also removing the prop from the latter', function() {
@@ -37,6 +37,15 @@ describe("Crude", function() {
 
 			expect(result.url).toEqual('http://example.com/test/1/bla/3.js');
 			expect(result.data).toEqual({bar: 2});
+		});
+		
+		it('should add data set through api.data(data) to requests globally', function() {
+			api.data({apikey: 'qwerty'});
+
+			var data = {foo: 'bar'},
+				result = api.request('test', data);
+
+			expect(result.data).toEqual({foo: 'bar', apikey: 'qwerty'});
 		});
 	});
 
@@ -68,7 +77,7 @@ describe("Crude", function() {
 
 			expect(result.url).toEqual('http://example.com/posts.js');
 			expect(result.method).toEqual('get');
-			expect(result.data).toBe(data);
+			expect(result.data).toEqual(data);
 		});
 
 		it('should have get(id) working correctly', function() {
@@ -76,7 +85,7 @@ describe("Crude", function() {
 
 			expect(result.url).toEqual('http://example.com/posts/1.js');
 			expect(result.method).toEqual('get');
-			expect(result.data).toBe(data);
+			expect(result.data).toEqual(data);
 		});
 
 		it('should have create(props) working correctly', function() {
@@ -108,7 +117,7 @@ describe("Crude", function() {
 
 			expect(result.url).toEqual('http://example.com/posts/1.js');
 			expect(result.method).toEqual('delete');
-			expect(result.data).toBe(data);
+			expect(result.data).toEqual(data);
 		});
 
 		it('memberAction(name, opts) should create corresponding method properly', function() {
@@ -118,7 +127,7 @@ describe("Crude", function() {
 
 			expect(result.url).toEqual('http://example.com/posts/1/custom.js');
 			expect(result.method).toEqual('get');
-			expect(result.data).toBe(data);
+			expect(result.data).toEqual(data);
 		});
 
 		it('memberAction options should work properly', function() {
@@ -146,7 +155,7 @@ describe("Crude", function() {
 
 			expect(result.url).toEqual('http://example.com/posts/custom.js');
 			expect(result.method).toEqual('get');
-			expect(result.data).toBe(data);
+			expect(result.data).toEqual(data);
 		});
 
 		it('collectionAction options should work properly', function() {
@@ -204,7 +213,7 @@ describe("Crude", function() {
 
 				expect(result.url).toEqual('http://example.com/posts/1/comments/2/foo.js');
 				expect(result.method).toEqual('get');
-				expect(result.data).toBe(data);
+				expect(result.data).toEqual(data);
 			});
 
 			it('api-wide memberAction on nested resources through api.nestedResources should work correctly', function() {
@@ -214,7 +223,7 @@ describe("Crude", function() {
 
 				expect(result.url).toEqual('http://example.com/posts/1/comments/2/bar.js');
 				expect(result.method).toEqual('get');
-				expect(result.data).toBe(data);
+				expect(result.data).toEqual(data);
 			});
 		});
 	});
