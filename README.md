@@ -2,7 +2,9 @@
 
 Crude is a clever JavaScript library from [CloudMade](http://cloudmade.com) that allows you to create human-readable APIs to RESTful services, inspired by the Rails routing engine.
 
-Initially a part of a closed-source client code for an upcoming CloudMade service, it's now released under an open source BSD-type license. It's designed to work both as a browser library and a CommonJS module for server-side platforms like Node.js. It also has a complete Jasmine-powered test coverage.
+Crude takes away all the cruft from REST-related code so that you can focus on the actual data instead of remembering what URL schemas, HTTP methods and parameters to use. It also makes your code more bulletproof, as you won't have to change the code throughout your whole project in case something on the server changes.   
+
+Initially a part of a closed-source client code for an upcoming CloudMade service, it's now released under an open source BSD-type license. It's designed to work both as a browser library and a CommonJS module for server-side platforms like Node.js. It also has a complete Jasmine-powered test coverage. Enjoy!
 
 ## Basic usage example
 
